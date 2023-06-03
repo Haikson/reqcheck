@@ -1,0 +1,6 @@
+[
+    {
+        "name": "Project name",
+        "requirements": "/path/to/requirements.txt"
+    }
+]
