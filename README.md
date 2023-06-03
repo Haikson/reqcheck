@@ -5,7 +5,7 @@
 3. Запусти
 
 ```
-python checer.py [out_file]
+python checker.py [out_file]
 ```
 
 - Если запускать без опции, выведет json в консоль
