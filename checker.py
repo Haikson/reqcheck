@@ -1,9 +1,15 @@
 import sys
 import re
 import json
+import logging
 import aiofiles, asyncio
 from collections import defaultdict
 import httpx
+
+
+logging.basicConfig(level=logging.INFO)
+
+logger = logging.getLogger(__name__)
 
 
 def parse(file_path):
@@ -29,10 +35,16 @@ def parse(file_path):
 
 
 async def get_last_version(package):
-    async with httpx.AsyncClient() as client:
-        resp = await client.get(f"https://pypi.org/pypi/{package.lower()}/json")
-        data = resp.json()
-        version = data["info"]["version"]
+    version = "0.0.0"
+    try:
+        async with httpx.AsyncClient() as client:
+            logger.info(f"Get {package} at https://pypi.org/pypi/{package.lower()}/json")
+            resp = await client.get(f"https://pypi.org/pypi/{package.lower()}/json")
+            data = resp.json()
+            version = data["info"]["version"]
+    except Exception as e:
+        logger.critical(f"{package} version undefined")
+        logger.critical(e)
     return version
 
 
@@ -66,7 +78,7 @@ async def get_package_info(package, version):
     last_version = await get_last_version(package)
     return {
         "package": package,
-        "version": version,
+        "version": version or "0.0.0",
         "last_version": last_version
     }
 
@@ -96,6 +108,8 @@ async def main():
         name = project["name"]
         requirements_path = project["requirements"]
 
+        logger.info(f"Project {name}")
+
         tasks = []
         for package, version in parse(requirements_path).items():
             tasks.append(get_package_info(package, version))
@@ -113,15 +127,15 @@ async def main():
         print(dict(outdated))
     else:
         filepath = sys.argv[1]
-        print(f"writing {filepath}")
+        logger.info(f"writing {filepath}")
         if filepath.endswith("json"):
-            # print("saving json")
+            # logger.info("saving json")
             as_json(outdated, filepath)
         elif filepath.endswith("csv"):
-            # print("saving csv")
+            # logger.info("saving csv")
             as_csv(outdated, filepath)
         else:
-            print("Undefined format")
+            logger.warning("Undefined format")
     
     
 
